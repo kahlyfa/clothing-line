@@ -7,4 +7,4 @@
   Production → 'https://YOUR-APP-NAME.ondigitalocean.app'
   No backend → '' (falls back to localStorage / store.js)
 */
-window.STRAPI_URL = '';
+window.STRAPI_URL = 'https://franko-clothing-yetgp.ondigitalocean.app';
