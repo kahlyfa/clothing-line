@@ -444,7 +444,7 @@ async function doLogin() {
 
   try {
     /* Verify the token using an auth-required endpoint */
-    const res = await fetch(`${STRAPI}/upload/files?pagination[pageSize]=1`, {
+    const res = await fetch(`${STRAPI}/api/upload/files?pagination[pageSize]=1`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.status === 401 || res.status === 403) throw new Error('Invalid token. Make sure it is Full Access type.');
@@ -503,7 +503,7 @@ async function apiCall(method, path, body) {
 async function uploadFile(file) {
   const form = new FormData();
   form.append('files', file);
-  const res = await fetch(`${STRAPI}/upload`, {
+  const res = await fetch(`${STRAPI}/api/upload`, {
     method:  'POST',
     headers: { Authorization: `Bearer ${TOKEN}` },
     body:    form,
@@ -513,7 +513,7 @@ async function uploadFile(file) {
     throw new Error('Session expired — please log in again with a valid token.');
   }
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || 'Upload failed');
+  if (!res.ok) throw new Error(`[${res.status}] ${data?.error?.message || 'Upload failed'}`);
   return data[0];
 }
 
