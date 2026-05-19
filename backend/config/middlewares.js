@@ -31,6 +31,7 @@ module.exports = ({ env }) => {
               '*.digitaloceanspaces.com',
               '*.cdn.digitaloceanspaces.com',
             ],
+            'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
             upgradeInsecureRequests: null,
           },
         },
