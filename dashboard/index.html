@@ -443,11 +443,11 @@ async function doLogin() {
   document.getElementById('loginError').style.display = 'none';
 
   try {
-    /* Verify the token works by fetching products */
-    const res = await fetch(`${STRAPI}/api/products?pagination[pageSize]=1`, {
+    /* Verify the token using an auth-required endpoint */
+    const res = await fetch(`${STRAPI}/upload/files?pagination[pageSize]=1`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (res.status === 401 || res.status === 403) throw new Error('Invalid or insufficient token. Make sure it is Full Access.');
+    if (res.status === 401 || res.status === 403) throw new Error('Invalid token. Make sure it is Full Access type.');
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     TOKEN = token;
     localStorage.setItem('franko_api_token', TOKEN);
@@ -508,9 +508,13 @@ async function uploadFile(file) {
     headers: { Authorization: `Bearer ${TOKEN}` },
     body:    form,
   });
+  if (res.status === 401 || res.status === 403) {
+    doLogout();
+    throw new Error('Session expired — please log in again with a valid token.');
+  }
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error?.message || 'Upload failed');
-  return data[0]; // { id, url, formats, ... }
+  return data[0];
 }
 
 /* Normalise image from public API format: { data: { attributes: { url, formats } } } */
