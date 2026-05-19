@@ -1,0 +1,97 @@
+name: franko-clothing
+region: nyc
+
+# ── Services ─────────────────────────────────────────────────────────────────
+
+services:
+
+  # Strapi CMS backend
+  - name: backend
+    source_dir: /backend
+    github:
+      repo: kahlyfa/clothing-line
+      branch: main
+      deploy_on_push: true
+    environment_slug: node-js
+    instance_size_slug: basic-xs          # $12/mo — upgrade if needed
+    instance_count: 1
+    run_command: npm run start
+    build_command: npm install && npm run build
+    http_port: 1337
+    routes:
+      - path: /api
+      - path: /admin
+      - path: /uploads
+    health_check:
+      http_path: /_health
+    envs:
+      # ── Strapi core secrets (set as SECRET type in DO dashboard) ──
+      - key: APP_KEYS
+        type: SECRET
+        value: REPLACE_WITH_RANDOM_STRINGS   # e.g. key1,key2,key3,key4
+      - key: API_TOKEN_SALT
+        type: SECRET
+        value: REPLACE_WITH_RANDOM_STRING
+      - key: ADMIN_JWT_SECRET
+        type: SECRET
+        value: REPLACE_WITH_RANDOM_STRING
+      - key: TRANSFER_TOKEN_SALT
+        type: SECRET
+        value: REPLACE_WITH_RANDOM_STRING
+      - key: JWT_SECRET
+        type: SECRET
+        value: REPLACE_WITH_RANDOM_STRING
+      # ── Database (auto-injected from the DO managed database add-on) ──
+      - key: DATABASE_HOST
+        value: ${db.HOSTNAME}
+      - key: DATABASE_PORT
+        value: ${db.PORT}
+      - key: DATABASE_NAME
+        value: ${db.DATABASE}
+      - key: DATABASE_USERNAME
+        value: ${db.USERNAME}
+      - key: DATABASE_PASSWORD
+        value: ${db.PASSWORD}
+      - key: DATABASE_SSL
+        value: "true"
+      # ── DigitalOcean Spaces (file uploads + CDN) ──
+      - key: DO_SPACES_REGION
+        value: nyc3                          # ← match your Space's region
+      - key: DO_SPACES_BUCKET
+        value: franko-clothing-media         # ← your Space name
+      - key: DO_SPACES_KEY
+        type: SECRET
+        value: REPLACE_WITH_SPACES_KEY
+      - key: DO_SPACES_SECRET
+        type: SECRET
+        value: REPLACE_WITH_SPACES_SECRET
+      - key: CDN_URL
+        value: https://franko-clothing-media.nyc3.cdn.digitaloceanspaces.com
+      # ── CORS: allow your frontend URL ──
+      - key: FRONTEND_URLS
+        value: https://franko-clothing.ondigitalocean.app  # ← your frontend URL
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: "1337"
+
+  # Static frontend
+  - name: frontend
+    source_dir: /
+    github:
+      repo: kahlyfa/clothing-line
+      branch: main
+      deploy_on_push: true
+    environment_slug: html
+    routes:
+      - path: /
+
+# ── Managed PostgreSQL database ───────────────────────────────────────────────
+databases:
+  - name: db
+    engine: PG
+    version: "15"
+    size: db-s-dev-database               # cheapest tier (~$15/mo)
+    num_nodes: 1

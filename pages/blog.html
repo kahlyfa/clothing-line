@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Blog — FRANKO CLOTHING</title>
+  <meta name="description" content="Style guides, menswear tips, and fashion stories from FRANKO CLOTHING."/>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+
+  <style>
+    /* PAGE HERO */
+    .blog-hero {
+      background: var(--cream);
+      padding: 8rem 0 3rem;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .blog-hero::before {
+      content: 'BLOG';
+      position: absolute; right: -1rem; top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--font-display);
+      font-size: clamp(8rem, 18vw, 16rem);
+      font-weight: 700;
+      color: rgba(201,168,76,0.06);
+      line-height: 1; pointer-events: none; user-select: none;
+    }
+    .blog-hero-content { position: relative; z-index: 2; }
+
+    /* BLOG SECTION */
+    .blog-section { padding: 4rem 0 6rem; }
+
+    /* FEATURED POST */
+    .featured-post {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      margin-bottom: 4rem;
+      border: 1px solid var(--border);
+      background: var(--white);
+      overflow: hidden;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .featured-post:hover { box-shadow: var(--shadow-md); }
+    .featured-post:hover .featured-post-img { transform: scale(1.04); }
+    .featured-post-img-wrap { overflow: hidden; aspect-ratio: auto; min-height: 400px; }
+    .featured-post-img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.6s ease; display: block;
+    }
+    .featured-post-body { padding: 3rem; display: flex; flex-direction: column; justify-content: center; }
+    .post-eyebrow {
+      font-size: .65rem; font-weight: 700; letter-spacing: .25em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: .6rem;
+    }
+    .featured-post-title {
+      font-family: var(--font-display); font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 600; line-height: 1.15; color: var(--black); margin-bottom: 1rem;
+    }
+    .post-excerpt { font-size: .9rem; color: var(--mid); line-height: 1.8; margin-bottom: 1.5rem; }
+    .post-meta { font-size: .72rem; color: #aaa; display: flex; align-items: center; gap: .8rem; margin-bottom: 1.5rem; }
+    .post-meta i { color: var(--gold); }
+    .read-more-link {
+      font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--gold-dark); display: inline-flex; align-items: center; gap: .4rem;
+      transition: gap .2s;
+    }
+    .read-more-link:hover { color: var(--gold); gap: .7rem; }
+
+    /* POST GRID */
+    .posts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    .post-card {
+      border: 1px solid var(--border); background: var(--white);
+      overflow: hidden; cursor: pointer; transition: var(--transition);
+    }
+    .post-card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px); }
+    .post-card:hover .post-card-img { transform: scale(1.05); }
+    .post-card-img-wrap { overflow: hidden; aspect-ratio: 16/9; }
+    .post-card-img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      transition: transform 0.6s ease;
+    }
+    .post-card-img-placeholder {
+      width: 100%; height: 180px; background: var(--cream);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gold-light); font-size: 2.5rem;
+    }
+    .post-card-body { padding: 1.4rem; }
+    .post-card-title {
+      font-family: var(--font-display); font-size: 1.2rem;
+      font-weight: 600; line-height: 1.3; color: var(--black); margin-bottom: .5rem;
+    }
+    .post-card-excerpt { font-size: .82rem; color: var(--mid); line-height: 1.7; margin-bottom: 1rem; }
+
+    /* POST MODAL */
+    .post-modal-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.8);
+      z-index: 5000; align-items: flex-start; justify-content: center;
+      padding: 2rem 1rem; overflow-y: auto;
+    }
+    .post-modal-backdrop.open { display: flex; }
+    .post-modal {
+      background: var(--white); width: 100%; max-width: 740px;
+      margin: auto; position: relative;
+    }
+    .post-modal-cover {
+      width: 100%; height: 340px; object-fit: cover; display: block;
+      background: var(--cream);
+    }
+    .post-modal-close {
+      position: absolute; top: 1rem; right: 1rem;
+      width: 40px; height: 40px; background: rgba(0,0,0,.6); color: #fff;
+      border: none; font-size: 1.1rem; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; z-index: 1;
+      transition: background .2s;
+    }
+    .post-modal-close:hover { background: rgba(0,0,0,.85); }
+    .post-modal-body { padding: 2.5rem 2.5rem 3rem; }
+    .post-modal-category {
+      font-size: .65rem; font-weight: 700; letter-spacing: .25em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: .5rem;
+    }
+    .post-modal-title {
+      font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 600; line-height: 1.15; color: var(--black); margin-bottom: .8rem;
+    }
+    .post-modal-meta { font-size: .72rem; color: #aaa; margin-bottom: 1.5rem; display: flex; gap: .8rem; }
+    .gold-line-sm { width: 40px; height: 2px; background: var(--gold); margin-bottom: 1.8rem; }
+    .post-modal-content { font-size: .92rem; line-height: 1.9; color: var(--mid); }
+    .post-modal-content p { margin-bottom: 1.2rem; }
+    .post-modal-content strong { color: var(--black); }
+    .post-modal-content h2,
+    .post-modal-content h3 { font-family: var(--font-display); color: var(--black); margin: 1.5rem 0 .8rem; }
+
+    /* EMPTY STATE */
+    .empty-blog { text-align: center; padding: 5rem 2rem; }
+    .empty-blog i { font-size: 3.5rem; color: var(--light-gray); margin-bottom: 1.5rem; }
+
+    @media (max-width: 992px) {
+      .featured-post { grid-template-columns: 1fr; }
+      .featured-post-img-wrap { min-height: 280px; }
+      .posts-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 576px) {
+      .posts-grid { grid-template-columns: 1fr; }
+      .post-modal-body { padding: 1.5rem; }
+      .post-modal-cover { height: 220px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <img src="../images/logo.png" alt="FRANKO_CLOTHING" class="nav-logo">
+  </a>
+  <div class="nav-links">
+    <a href="../index.html">Home</a>
+    <a href="shop.html">Shop</a>
+    <a href="about.html">Our Story</a>
+    <a href="blog.html" class="active">Blog</a>
+    <a href="contact.html">Contact</a>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    <div class="nav-cart" onclick="openCart()" title="View Cart">
+      <i class="bi bi-bag"></i>
+      <span class="cart-badge" style="display:none;">0</span>
+    </div>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="mobile-nav" id="mobileNav">
+  <a href="../index.html">Home</a>
+  <a href="shop.html">Shop</a>
+  <a href="about.html">Our Story</a>
+  <a href="blog.html">Blog</a>
+  <a href="contact.html">Contact</a>
+</div>
+
+<!-- HERO -->
+<section class="blog-hero">
+  <div class="container blog-hero-content">
+    <div class="reveal">
+      <div class="section-label">The Gentleman's Journal</div>
+      <h1 class="section-title">Style Stories &<br>Guides</h1>
+      <div class="gold-line"></div>
+      <p class="section-subtitle mt-3">
+        Insights on menswear, dressing with intention, and living with distinction.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- BLOG CONTENT -->
+<section class="blog-section">
+  <div class="container">
+    <!-- Featured post slot -->
+    <div id="featuredPostSlot"></div>
+    <!-- Remaining posts grid -->
+    <div class="posts-grid stagger-children" id="postsGrid"></div>
+    <!-- Empty state -->
+    <div class="empty-blog" id="emptyBlog" style="display:none;">
+      <i class="bi bi-journal-x"></i>
+      <p class="section-subtitle">No posts published yet. Check back soon.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="reveal">
+        <div class="footer-brand-name">
+          <a href="../index.html" class="navbar-brand">
+            <img src="../images/logo.png" alt="FRANKO CLOTHING" class="nav-logo" style="height:80px;width:auto;">
+          </a>
+        </div>
+        <p class="footer-tagline">Premium menswear for the modern gentleman. Based in Baltimore. Shipped with intention, worn with distinction.</p>
+        <div class="social-links">
+          <a href="https://www.instagram.com/franko_budjet?igsh=eThvZTBqY2NsdGg0" class="social-link"><i class="bi bi-instagram"></i></a>
+          <a href="https://www.facebook.com/share/1F2oCNVqxN/" class="social-link"><i class="bi bi-facebook"></i></a>
+          <a href="https://www.tiktok.com/@thearenaoffashion?_r=1&_t=ZT-95EBECxkHXC" class="social-link"><i class="bi bi-tiktok"></i></a>
+          <a href="https://wa.me/2408605101" class="social-link"><i class="bi bi-whatsapp"></i></a>
+        </div>
+      </div>
+      <div class="reveal">
+        <div class="footer-heading">Shop</div>
+        <div class="footer-links">
+          <a href="shop.html?cat=suits">Suits</a>
+          <a href="shop.html?cat=shirts">Shirts</a>
+          <a href="shop.html?cat=shoes">Shoes</a>
+          <a href="shop.html?cat=accessories">Accessories</a>
+        </div>
+      </div>
+      <div class="reveal">
+        <div class="footer-heading">Company</div>
+        <div class="footer-links">
+          <a href="about.html">Our Story</a>
+          <a href="blog.html">Blog</a>
+          <a href="contact.html">Contact Us</a>
+        </div>
+      </div>
+      <div class="reveal">
+        <div class="footer-heading">Get in Touch</div>
+        <div class="footer-links">
+          <a href="https://wa.me/2408605101"><i class="bi bi-whatsapp me-2"></i>WhatsApp Us</a>
+          <a href="mailto:frankoclothingllc@gmail.com"><i class="bi bi-envelope me-2"></i>Email Us</a>
+          <a href="https://maps.app.goo.gl/1bZXSBhwNqYVZpEu7" target="_blank"><i class="bi bi-geo-alt me-2"></i>9066 Baltimore Avenue, College Park. MD 20740</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2025 FRANKO_CLOTHING. All rights reserved.</span>
+      <span>Designed for the distinguished gentleman.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- CART SIDEBAR -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-sidebar" id="cartSidebar">
+  <div class="cart-header">
+    <h3>Your Cart</h3>
+    <button class="cart-close" onclick="closeCart()"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-footer">
+    <div class="cart-total">
+      <span>Total</span><span id="cartTotal">$0</span>
+    </div>
+    <button class="btn btn-primary cart-checkout-btn" onclick="checkoutViaWhatsApp()">
+      <i class="bi bi-whatsapp"></i> Checkout via WhatsApp
+    </button>
+  </div>
+</div>
+
+<!-- POST READER MODAL -->
+<div class="post-modal-backdrop" id="postModal">
+  <div class="post-modal">
+    <button class="post-modal-close" onclick="closePostModal()"><i class="bi bi-x-lg"></i></button>
+    <img id="postModalCover" class="post-modal-cover" src="" alt="" style="display:none;">
+    <div class="post-modal-body">
+      <div class="post-modal-category" id="postModalCat"></div>
+      <h2 class="post-modal-title" id="postModalTitle"></h2>
+      <div class="post-modal-meta" id="postModalMeta"></div>
+      <div class="gold-line-sm"></div>
+      <div class="post-modal-content" id="postModalContent"></div>
+    </div>
+  </div>
+</div>
+
+<script>window.IMG_PREFIX = '../';</script>
+<script src="../js/config.js"></script>
+<script src="../js/store.js"></script>
+<script src="../js/api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/main.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', renderBlog);
+window.addEventListener('storage', e => { if (e.key === 'franko_blog') renderBlog(); });
+
+/* Cache loaded posts so openPost() can look them up synchronously */
+let _loadedPosts = [];
+
+async function renderBlog() {
+  _loadedPosts = (await FrankoAPI.getBlogPosts()).filter(p => p.published);
+  const featuredSlot = document.getElementById('featuredPostSlot');
+  const postsGrid    = document.getElementById('postsGrid');
+  const emptyBlog    = document.getElementById('emptyBlog');
+
+  if (_loadedPosts.length === 0) {
+    featuredSlot.innerHTML = '';
+    postsGrid.innerHTML = '';
+    emptyBlog.style.display = 'block';
+    return;
+  }
+  emptyBlog.style.display = 'none';
+
+  const [featured, ...rest] = _loadedPosts;
+
+  /* Featured post */
+  const fImg = featured.coverImage
+    ? (featured.coverImage.startsWith('http') ? featured.coverImage : '../' + featured.coverImage)
+    : '';
+  featuredSlot.innerHTML = `
+<div class="featured-post reveal" onclick="openPost('${featured.id}')">
+  <div class="featured-post-img-wrap">
+    ${fImg
+      ? `<img class="featured-post-img" src="${fImg}" alt="${featured.title}">`
+      : `<div class="featured-post-img" style="background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:4rem;color:var(--gold-light);"><i class="bi bi-newspaper"></i></div>`
+    }
+  </div>
+  <div class="featured-post-body">
+    <div class="post-eyebrow">${featured.category || 'Feature'}</div>
+    <h2 class="featured-post-title">${featured.title}</h2>
+    <p class="post-excerpt">${featured.excerpt || ''}</p>
+    <div class="post-meta">
+      <i class="bi bi-calendar3"></i> ${featured.date || ''}
+    </div>
+    <span class="read-more-link">Read Article <i class="bi bi-arrow-right"></i></span>
+  </div>
+</div>`;
+
+  /* Remaining posts */
+  postsGrid.innerHTML = rest.map(p => {
+    const img = p.coverImage
+      ? (p.coverImage.startsWith('http') ? p.coverImage : '../' + p.coverImage)
+      : '';
+    return `
+<div class="post-card reveal" onclick="openPost('${p.id}')">
+  <div class="post-card-img-wrap">
+    ${img
+      ? `<img class="post-card-img" src="${img}" alt="${p.title}">`
+      : `<div class="post-card-img-placeholder"><i class="bi bi-newspaper"></i></div>`
+    }
+  </div>
+  <div class="post-card-body">
+    <div class="post-eyebrow">${p.category || ''}</div>
+    <div class="post-card-title">${p.title}</div>
+    <p class="post-card-excerpt">${p.excerpt || ''}</p>
+    <div class="post-meta"><i class="bi bi-calendar3"></i> ${p.date || ''}</div>
+    <span class="read-more-link">Read More <i class="bi bi-arrow-right"></i></span>
+  </div>
+</div>`;
+  }).join('');
+
+  /* Re-trigger scroll reveal for new elements */
+  if (typeof initScrollReveal === 'function') initScrollReveal();
+}
+
+function openPost(id) {
+  const p = _loadedPosts.find(x => x.id === id);
+  if (!p) return;
+
+  const cover = document.getElementById('postModalCover');
+  if (p.coverImage) {
+    const src = p.coverImage.startsWith('http') ? p.coverImage : '../' + p.coverImage;
+    cover.src = src;
+    cover.style.display = 'block';
+  } else {
+    cover.style.display = 'none';
+  }
+  document.getElementById('postModalCat').textContent   = p.category || '';
+  document.getElementById('postModalTitle').textContent = p.title;
+  document.getElementById('postModalMeta').innerHTML    = `<i class="bi bi-calendar3"></i> ${p.date || ''}`;
+  document.getElementById('postModalContent').innerHTML = p.content || '<p>Content coming soon.</p>';
+
+  document.getElementById('postModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePostModal() {
+  document.getElementById('postModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('postModal').addEventListener('click', function(e) {
+  if (e.target === this) closePostModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePostModal(); });
+</script>
+</body>
+</html>

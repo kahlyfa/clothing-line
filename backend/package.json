@@ -1,0 +1,25 @@
+{
+  "name": "franko-clothing-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Strapi CMS backend for FRANKO CLOTHING",
+  "scripts": {
+    "develop": "strapi develop",
+    "start": "strapi start",
+    "build": "strapi build",
+    "strapi": "strapi"
+  },
+  "dependencies": {
+    "@strapi/strapi": "4.25.0",
+    "@strapi/plugin-users-permissions": "4.25.0",
+    "@strapi/plugin-i18n": "4.25.0",
+    "@strapi/provider-upload-aws-s3": "4.25.0",
+    "pg": "8.11.3",
+    "pg-connection-string": "2.6.4"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0 <=20.x.x",
+    "npm": ">=6.0.0"
+  }
+}
