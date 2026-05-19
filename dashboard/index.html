@@ -165,10 +165,12 @@
   <div class="login-box">
     <div class="login-logo">FRANKO_CLOTHING</div>
     <div class="login-sub">Admin Portal</div>
-    <label class="login-label" for="adminEmail">Email</label>
-    <input id="adminEmail" class="login-input" type="email" placeholder="admin@example.com" autocomplete="email">
-    <label class="login-label" for="adminPass">Password</label>
-    <input id="adminPass" class="login-input" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <label class="login-label" for="apiToken">Strapi API Token</label>
+    <input id="apiToken" class="login-input" type="password" placeholder="Paste your full-access API token"
+      autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
+    <p style="font-size:.68rem;color:rgba(255,255,255,.35);margin-top:.6rem;line-height:1.6;">
+      Get it from: Strapi Admin → Settings → API Tokens → + Create Token (Full access)
+    </p>
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In</button>
     <div class="login-error" id="loginError"></div>
   </div>
@@ -417,65 +419,59 @@
    CONFIG
    ============================================= */
 const STRAPI       = 'https://franko-clothing-yetgp.ondigitalocean.app';
-const PRODUCT_UID  = 'api::product.product';
-const BLOG_UID     = 'api::blog-post.blog-post';
 const CAT_LABELS   = { suits:'Suits', shirts:'Shirts', shoes:'Shoes', accessories:'Accessories', african_attires:'African Attires' };
 const SPECIAL_BADGES = ['Signature','Handcrafted'];
 
-let JWT = sessionStorage.getItem('franko_admin_jwt') || '';
+let TOKEN = localStorage.getItem('franko_api_token') || '';
 let allProducts = [];
 let allPosts    = [];
-let pendingProductFile = null;  // File object awaiting upload
-let pendingBlogFile    = null;
-let currentProductImageId = null;  // existing Strapi media ID when editing
+let pendingProductFile    = null;
+let pendingBlogFile       = null;
+let currentProductImageId = null;
 let currentBlogImageId    = null;
 
 /* =============================================
-   AUTH
+   AUTH  — API Token based
    ============================================= */
 async function doLogin() {
-  const email    = document.getElementById('adminEmail').value.trim();
-  const password = document.getElementById('adminPass').value;
-  const errEl    = document.getElementById('loginError');
-  const btn      = document.getElementById('loginBtn');
+  const token = document.getElementById('apiToken').value.trim();
+  const btn   = document.getElementById('loginBtn');
+  if (!token) { showLoginError('Please paste your API token.'); return; }
 
-  if (!email || !password) { showLoginError('Please enter your email and password.'); return; }
-
-  btn.disabled = true;
-  btn.textContent = 'Signing in…';
-  errEl.style.display = 'none';
+  btn.disabled    = true;
+  btn.textContent = 'Verifying…';
+  document.getElementById('loginError').style.display = 'none';
 
   try {
-    const res  = await fetch(`${STRAPI}/admin/auth/local`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ email, password }),
+    /* Verify the token works by fetching products */
+    const res = await fetch(`${STRAPI}/api/products?pagination[pageSize]=1`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json?.error?.message || 'Invalid credentials');
-    JWT = json.data.token;
-    sessionStorage.setItem('franko_admin_jwt', JWT);
+    if (res.status === 401 || res.status === 403) throw new Error('Invalid or insufficient token. Make sure it is Full Access.');
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    TOKEN = token;
+    localStorage.setItem('franko_api_token', TOKEN);
     showApp();
   } catch (err) {
     showLoginError(err.message);
-    btn.disabled = false;
+    btn.disabled    = false;
     btn.textContent = 'Sign In';
   }
 }
 
 function showLoginError(msg) {
   const el = document.getElementById('loginError');
-  el.textContent = msg;
+  el.textContent   = msg;
   el.style.display = 'block';
 }
 
 function doLogout() {
-  sessionStorage.removeItem('franko_admin_jwt');
-  JWT = '';
+  localStorage.removeItem('franko_api_token');
+  TOKEN = '';
   location.reload();
 }
 
-if (JWT) showApp();
+if (TOKEN) showApp();
 
 /* =============================================
    SHOW APP + LOAD DATA
@@ -490,16 +486,16 @@ async function showApp() {
 }
 
 /* =============================================
-   API HELPERS
+   API HELPERS  — uses /api/ with API token
    ============================================= */
 async function apiCall(method, path, body) {
   const opts = {
     method,
-    headers: { 'Authorization': `Bearer ${JWT}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
   };
   if (body !== undefined) opts.body = JSON.stringify(body);
   const res = await fetch(`${STRAPI}${path}`, opts);
-  if (res.status === 401) { doLogout(); return null; }
+  if (res.status === 401 || res.status === 403) { doLogout(); return null; }
   if (res.status === 204) return null;
   return res.json();
 }
@@ -509,7 +505,7 @@ async function uploadFile(file) {
   form.append('files', file);
   const res = await fetch(`${STRAPI}/upload`, {
     method:  'POST',
-    headers: { 'Authorization': `Bearer ${JWT}` },
+    headers: { Authorization: `Bearer ${TOKEN}` },
     body:    form,
   });
   const data = await res.json();
@@ -517,66 +513,58 @@ async function uploadFile(file) {
   return data[0]; // { id, url, formats, ... }
 }
 
-function imgUrl(imageObj) {
-  if (!imageObj) return '';
-  const f = imageObj.formats;
-  return f?.medium?.url || f?.small?.url || imageObj.url || '';
+/* Normalise image from public API format: { data: { attributes: { url, formats } } } */
+function imgUrl(imageField) {
+  const attr = imageField?.data?.attributes || imageField?.attributes || imageField;
+  if (!attr) return '';
+  const f = attr.formats;
+  return f?.medium?.url || f?.small?.url || attr.url || '';
+}
+
+/* Flatten a public-API item { id, attributes } → plain object */
+function flatten(item) {
+  if (!item) return null;
+  return { id: item.id, ...item.attributes };
 }
 
 /* =============================================
    PRODUCTS
    ============================================= */
 async function loadProducts() {
-  const data = await apiCall('GET', `/content-manager/collection-types/${PRODUCT_UID}?pageSize=200&sort=createdAt:desc`);
-  allProducts = data?.results || [];
+  const data = await apiCall('GET', '/api/products?populate=image&pagination[pageSize]=200&sort=createdAt:desc&publicationState=preview');
+  allProducts = (data?.data || []).map(flatten);
 }
 
-async function createProductEntry(data) {
-  const result = await apiCall('POST', `/content-manager/collection-types/${PRODUCT_UID}`, data);
-  if (result?.id) {
-    await apiCall('POST', `/content-manager/collection-types/${PRODUCT_UID}/${result.id}/actions/publish`, {});
-  }
-  return result;
+async function createProductEntry(payload) {
+  return apiCall('POST', '/api/products', { data: { ...payload, publishedAt: new Date().toISOString() } });
 }
 
-async function updateProductEntry(id, data) {
-  const result = await apiCall('PUT', `/content-manager/collection-types/${PRODUCT_UID}/${id}`, data);
-  if (result?.id) {
-    await apiCall('POST', `/content-manager/collection-types/${PRODUCT_UID}/${id}/actions/publish`, {});
-  }
-  return result;
+async function updateProductEntry(id, payload) {
+  return apiCall('PUT', `/api/products/${id}`, { data: payload });
 }
 
 async function deleteProductEntry(id) {
-  return apiCall('DELETE', `/content-manager/collection-types/${PRODUCT_UID}/${id}`);
+  return apiCall('DELETE', `/api/products/${id}`);
 }
 
 /* =============================================
    BLOG POSTS
    ============================================= */
 async function loadBlogPosts() {
-  const data = await apiCall('GET', `/content-manager/collection-types/${BLOG_UID}?pageSize=200&sort=createdAt:desc`);
-  allPosts = data?.results || [];
+  const data = await apiCall('GET', '/api/blog-posts?populate=coverImage&pagination[pageSize]=200&sort=createdAt:desc&publicationState=preview');
+  allPosts = (data?.data || []).map(flatten);
 }
 
-async function createBlogEntry(data) {
-  const result = await apiCall('POST', `/content-manager/collection-types/${BLOG_UID}`, data);
-  if (result?.id) {
-    await apiCall('POST', `/content-manager/collection-types/${BLOG_UID}/${result.id}/actions/publish`, {});
-  }
-  return result;
+async function createBlogEntry(payload) {
+  return apiCall('POST', '/api/blog-posts', { data: { ...payload, publishedAt: new Date().toISOString() } });
 }
 
-async function updateBlogEntry(id, data) {
-  const result = await apiCall('PUT', `/content-manager/collection-types/${BLOG_UID}/${id}`, data);
-  if (result?.id) {
-    await apiCall('POST', `/content-manager/collection-types/${BLOG_UID}/${id}/actions/publish`, {});
-  }
-  return result;
+async function updateBlogEntry(id, payload) {
+  return apiCall('PUT', `/api/blog-posts/${id}`, { data: payload });
 }
 
 async function deleteBlogEntry(id) {
-  return apiCall('DELETE', `/content-manager/collection-types/${BLOG_UID}/${id}`);
+  return apiCall('DELETE', `/api/blog-posts/${id}`);
 }
 
 /* =============================================
@@ -617,7 +605,7 @@ function renderDashboard() {
         <tr>
           <td><img class="table-img" src="${imgUrl(p.image)}" alt="${p.name}" onerror="this.style.visibility='hidden'"></td>
           <td style="font-weight:500;">${p.name}</td>
-          <td>${CAT_LABELS[p.category] || p.category}</td>
+          <td>${CAT_LABELS[p.category] || p.category || ''}</td>
           <td style="font-weight:600;color:var(--gold-dark);">$${Number(p.price).toLocaleString()}</td>
           <td><span class="badge-pill ${p.publishedAt ? 'badge-green' : 'badge-gray'}">${p.publishedAt ? 'Published' : 'Draft'}</span></td>
         </tr>`).join('')
@@ -687,10 +675,10 @@ function openProductModal(id) {
     document.getElementById('pDescription').value   = p.description || '';
     document.getElementById('pFeatured').checked    = !!p.featured;
 
-    if (p.image) {
-      currentProductImageId = p.image.id;
-      const url = imgUrl(p.image);
-      document.getElementById('pImgPreview').src = url;
+    const imgData = p.image?.data || p.image;
+    if (imgData) {
+      currentProductImageId = imgData.id || imgData;
+      document.getElementById('pImgPreview').src              = imgUrl(p.image);
       document.getElementById('pImgPreviewBox').style.display = 'block';
       document.getElementById('pImageZoneText').textContent   = 'Click to replace image';
     } else {
@@ -801,9 +789,10 @@ function openBlogModal(id) {
     document.getElementById('bExcerpt').value    = p.excerpt  || '';
     document.getElementById('bContent').value    = p.content  || '';
 
-    if (p.coverImage) {
-      currentBlogImageId = p.coverImage.id;
-      document.getElementById('bImgPreview').src         = imgUrl(p.coverImage);
+    const coverData = p.coverImage?.data || p.coverImage;
+    if (coverData) {
+      currentBlogImageId = coverData.id || coverData;
+      document.getElementById('bImgPreview').src              = imgUrl(p.coverImage);
       document.getElementById('bImgPreviewBox').style.display = 'block';
       document.getElementById('bImageZoneText').textContent   = 'Click to replace image';
     } else {
