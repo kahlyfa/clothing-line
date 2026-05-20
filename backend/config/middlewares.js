@@ -45,6 +45,8 @@ module.exports = ({ env }) => {
         origin: [
           'http://localhost:1337',
           'http://127.0.0.1:1337',
+          'https://frankoclothing.com',
+          'https://www.frankoclothing.com',
           ...frontendUrls,
         ],
       },
